@@ -14,12 +14,11 @@ from sqlalchemy.orm import relationship
 from cloudinary import uploader
 
 cloudinary.config(
-    cloud_name="dw6opo6zj",
+    cloud_name=os.environ.get("CLOUD_NAME"),
     api_key=os.environ["CLOUD_API"],
     api_secret=os.environ["API_SECRET"]
 )
 
-CONTACT = os.environ["TWITTER"]
 
 app = Flask(__name__)
 login_manager = LoginManager()
@@ -35,8 +34,6 @@ Bootstrap5(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 db = SQLAlchemy()
 db.init_app(app)
-
-n = 3
 
 
 @login_manager.user_loader
