@@ -1,0 +1,121 @@
+{% include "header.html" %} {% from 'bootstrap5/form.html' import render_form %}
+<!-- Page Header-->
+<header class="masthead" style="background-image: url('{{ post.img_url }}')">
+  <div class="overlay"></div>
+  <div class="container position-relative px-4 px-lg-5">
+    <div class="row gx-4 gx-lg-5 justify-content-center">
+      <div class="col-md-10 col-lg-8 col-xl-7">
+        <div class="post-heading">
+          <h1>{{post.title}}</h1>
+          <h2 class="subheading">{{ post.subtitle }}</h2>
+          <span class="meta">
+            Posted by
+            <a href="">{{ post.author.name }}</a>
+            on {{ post.date }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<!-- Post Content-->
+<article>
+  <div class="container px-4 px-lg-5 py-5">
+    <div class="row gx-4 gx-lg-5 justify-content-center">
+      <div
+        class="col-md-10 col-lg-8 col-xl-7 bg-body-tertiary pb-4 content-cont"
+        style="width: 80%; border-radius: 21px"
+      >
+        <p>{{ post.body | safe }}</p>
+        <hr />
+        {% if current_user.id == 1 %}
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+          <a
+            href="{{ url_for('edit_post', post_id=post.id) }}"
+            class="btn btn-primary"
+            role="button"
+            >Edit Post</a
+          >
+          <a
+            href="{{ url_for('delete', post_id=post.id) }}"
+            class="btn btn-danger"
+            role="button"
+            >Delete Post</a
+          >
+        </div>
+        {% endif %} {% if current_user.is_authenticated %}
+        <div>
+          <form
+            action="{{ url_for('add_comment', post_id=post.id) }}"
+            method="post"
+          >
+            <textarea
+              class="form-control my-4 rounded"
+              id="comment-form"
+              name="comment"
+              placeholder="Write a comment..."
+              required
+              rows="3"
+            ></textarea>
+            <button class="btn btn-primary" type="submit">Add comment</button>
+          </form>
+        </div>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-primary" role="button"
+          >Login to comment</a
+        >
+        {% endif %}
+        <!-- Comment section  -->
+        <div class="comments">
+          <h5 class="comment-title my-4">{{ comments | count }} Comments</h5>
+          {% for comment in comments %}
+          <div class="comment d-flex my-4">
+            <div class="flex-shrink-0">
+              <div class="avatar avatar-m rounded-circle">
+                <img
+                  class="avatar-img"
+                  src="{{ comment.author.img_url }}"
+                  alt="user-avatar"
+                />
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-2 ms-sm-3">
+              <div
+                class="comment-meta d-flex justify-content-between align-items-baseline"
+              >
+                <h6 class="me-2">{{ comment.author.name }}</h6>
+                <span class="text-muted">{{ comment.date }}</span>
+              </div>
+              <div class="row">
+              <div class="comment-body col-md-11">{{ comment.body }}</div>
+                {% if current_user.id == comment.author_id or current_user.id == 1 %}
+                 <div class="col-md-1 justify-content-end">
+          <a
+            href="{{ url_for('delete_comment', post_id=post.id, comment_id=comment.id) }}"
+            id="delete"
+            ><svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-trash3"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"
+              /></svg
+          ></a>
+        </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <hr>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+<!-- Footer-->
+{% include "footer.html" %}
