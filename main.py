@@ -95,6 +95,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(250), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     img_url = db.Column(db.String(250))
+    bio = relationship("UserBio", backref="user", uselist=False)
     # Define one-to-many relationships
     posts = relationship("BlogPost", backref="author", lazy=True)
     comments = relationship("Comment", backref="author", lazy=True)
@@ -102,10 +103,21 @@ class User(UserMixin, db.Model):
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.String(1000), nullable=False)
+    body = db.Column(db.String(250), nullable=False)
     date = db.Column(db.String(100), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey("blog_post.id"), nullable=False)
+
+
+class UserBio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    genre = db.Column(db.String(250))
+    about = db.Column(db.String(2000))
+    profession = db.Column(db.String(250))
+    linkedin = db.Column(db.String(250))
+    twitter = db.Column(db.String(250))
+    facebook = db.Column(db.String(250))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False)
 
 
 with app.app_context():
