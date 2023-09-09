@@ -31,7 +31,7 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 Bootstrap5(app)
 
 # CONNECT TO DB
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DB_URI")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -253,7 +253,7 @@ def register():
         new_user = User()
         new_user.name = registration_form.name.data
         new_user.email = registration_form.email.data
-        new_user.password = generate_password_hash(registration_form.password.data, method="pbkdf2", salt_length=16)
+        new_user.password = generate_password_hash(registration_form.password.data, method="pbkdf2:sha256", salt_length=16)
         new_user.img_url = "https://res.cloudinary.com/dw6opo6zj/image/upload/v1694185393/qihe2lbih2oaegat3pzl.jpg"
         already_registered = User.query.filter_by(email=new_user.email).all()
         if already_registered:
