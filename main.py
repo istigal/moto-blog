@@ -27,11 +27,11 @@ login_manager.init_app(app)
 ckeditor = CKEditor()
 ckeditor.init_app(app)
 
-app.config['SECRET_KEY'] = os.environ["SECRET_KEY"]
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 Bootstrap5(app)
 
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DB_URI"), "sqlite:///posts.db"
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -145,12 +145,12 @@ def get_post(post_id):
     return render_template("post.html", post=requested_post, comments=comments)
 
 
-@app.route('/about')
+@app.route("/about")
 def about():
     return render_template("about.html")
 
 
-@app.route('/contact', methods=["POST", "GET"])
+@app.route("/contact", methods=["POST", "GET"])
 def contact():
     contact_form = forms.ContactUs()
     success_message = None
@@ -161,7 +161,7 @@ def contact():
         message = contact_form.message.data
         send_email(name, email_address, phone, message)
         success_message = "Your message has been successfully sent."
-        return render_template('contact.html', success_message=success_message)
+        return render_template("contact.html", success_message=success_message)
     return render_template("contact.html", form=contact_form, success_message=success_message)
 
 
@@ -183,7 +183,7 @@ def add_post():
         db.session.add(new_post)
         db.session.commit()
         return redirect(url_for("home"))
-    return render_template('create-post.html', form=form)
+    return render_template("create-post.html", form=form)
 
 
 @app.route("/posts/<int:post_id>/edit", methods=["GET", "POST"])
@@ -203,11 +203,11 @@ def edit_post(post_id):
         else:
             post.img_url = post.img_url
         db.session.commit()
-        return redirect(url_for('get_post', post_id=post.id))
-    return render_template('create-post.html', form=edit_form, is_edit=True)
+        return redirect(url_for("get_post", post_id=post.id))
+    return render_template("create-post.html", form=edit_form, is_edit=True)
 
 
-@app.route('/delete/<int:post_id>', methods=["GET", "DELETE"])
+@app.route("/delete/<int:post_id>")
 @login_required
 @admin_only
 def delete(post_id):
@@ -231,7 +231,7 @@ def login():
             password = check_password_hash(user.password, login_form.password.data)
             if password:
                 login_user(user)
-                return redirect(url_for('home'))
+                return redirect(url_for("home"))
             else:
                 error = "The username and password doesn't match."
         else:
@@ -263,11 +263,11 @@ def register():
             db.session.add(new_user)
             db.session.commit()
             login()
-            return redirect(url_for('home'))
+            return redirect(url_for("home"))
     return render_template("register.html", form=registration_form)
 
 
-@app.route('/post/<int:post_id>/add_comment', methods=["GET", "POST"])
+@app.route("/post/<int:post_id>/add_comment", methods=["GET", "POST"])
 @login_required
 def add_comment(post_id):
     date = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
@@ -299,7 +299,7 @@ def edit_profile():
         user.name = form.name.data
         user.email = form.email.data
         db.session.commit()
-        return redirect(url_for('my_page'))
+        return redirect(url_for("my_page"))
 
     return render_template("my_page.html", form=form, edit_mode=True)
 
