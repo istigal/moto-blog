@@ -81,7 +81,7 @@ class BlogPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(250), unique=True, nullable=False)
     subtitle = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250))
     author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
@@ -104,7 +104,7 @@ class User(UserMixin, db.Model):
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey("blog_post.id"), nullable=False)
 
