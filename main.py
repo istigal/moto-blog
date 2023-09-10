@@ -31,7 +31,8 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 Bootstrap5(app)
 
 # CONNECT TO DB
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -251,7 +252,7 @@ def register():
     registration_form = forms.Register()
     if registration_form.validate_on_submit():
         new_user = User()
-        new_user.name = registration_form.name.data
+        new_user.name = registration_form.name.data.title()
         new_user.email = registration_form.email.data
         new_user.password = generate_password_hash(registration_form.password.data, method="pbkdf2:sha256", salt_length=16)
         new_user.img_url = "https://res.cloudinary.com/dw6opo6zj/image/upload/v1694185393/qihe2lbih2oaegat3pzl.jpg"
@@ -315,4 +316,4 @@ def delete_comment(post_id, comment_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
