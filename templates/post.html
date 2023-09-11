@@ -43,60 +43,37 @@
             >Delete Post</a
           >
         </div>
-        {% endif %} {% if current_user.is_authenticated %}
-        <div>
-          <form
-            action="{{ url_for('add_comment', post_id=post.id) }}"
-            method="post"
-          >
-            <textarea
-              class="form-control my-4 rounded"
-              id="comment-form"
-              name="comment"
-              placeholder="Write a comment..."
-              required
-              rows="3"
-            ></textarea>
-            <button class="btn btn-primary" type="submit">Add comment</button>
-          </form>
-        </div>
-        {% else %}
-        <a href="{{ url_for('login') }}" class="btn btn-primary" role="button"
-          >Login to comment</a
-        >
         {% endif %}
         <!-- Comment section  -->
         <div class="comments">
           <h5 class="comment-title my-4">{{ comments | count }} Comments</h5>
           {% for comment in comments %}
-          <div class="comment d-flex my-4">
-            <div class="flex-shrink-0">
-              <div class="avatar avatar-m rounded-circle">
-                <img
-                  class="avatar-img"
-                  src="{{ comment.author.img_url }}"
-                  alt="user-avatar"
-                />
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex flex-start align-items-center">
+                <img class="rounded-circle shadow-1-strong me-3" src="{{ comment.author.img_url }}" alt="avatar" width="60" height="60">
+                <div class="row">
+                  <h6 class="fw-bold text-primary m-1">{{ comment.author.name }}</h6>
+                  <p class="text-muted small mb-0">
+                    {{ comment.date }}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div class="flex-grow-1 ms-2 ms-sm-3">
-              <div
-                class="comment-meta d-flex justify-content-between align-items-baseline"
-              >
-                <h6 class="me-2">{{ comment.author.name }}</h6>
-                <span class="text-muted">{{ comment.date }}</span>
-              </div>
-              <div class="row">
-              <div class="comment-body col-md-11">{{ comment.body }}</div>
-                {% if current_user.id == comment.author_id or current_user.id == 1 %}
-                 <div class="col-md-1 justify-content-end">
+              <div class="row small d-flex justify-content-between">
+                <div class="col-md-11">
+              <p class="pb-2">
+                {{ comment.body }}
+              </p>
+                </div>
+              {% if current_user.id == comment.author_id or current_user.id == 1 %}
+                 <div class="col-md-1 align-self-end">
           <a
             href="{{ url_for('delete_comment', post_id=post.id, comment_id=comment.id) }}"
             id="delete"
             ><svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               fill="currentColor"
               class="bi bi-trash3"
               viewBox="0 0 16 16"
@@ -109,9 +86,21 @@
                 {% endif %}
               </div>
             </div>
-          </div>
-          <hr>
-          {% endfor %}
+            </div>
+            {% endfor %}
+            <div class="card-footer pt-3 pb-5 px-1 border-0" style="background-color: #f8f9fa;">
+              <form action="{{ url_for('add_comment', post_id=post.id) }}" method="post">
+              <div class="d-flex flex-start w-100">
+                <img class="rounded-circle shadow-1-strong me-3" src="{{ current_user.img_url }}" alt="avatar" width="40" height="37">
+                <div class="form-outline w-100">
+                  <textarea class="form-control rounded" id="comment" name="comment" placeholder="Write a comment..." rows="4" style="background: #fff;"></textarea>
+                <div class="form-notch"><div class="form-notch-leading" style="width: 9px;"></div><div class="form-notch-middle" style="width: 60px;"></div><div class="form-notch-trailing"></div></div></div>
+              </div>
+              <div class="float-end mt-2 pt-1">
+                <button type="submit" class="btn btn-primary btn-sm">Post comment</button>
+              </div>
+                </form>
+            </div>
         </div>
       </div>
     </div>

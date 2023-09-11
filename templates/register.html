@@ -19,6 +19,9 @@
   <div class="row gx-4 gx-lg-5 justify-content-center">
     <div class="col-sm-12 col-md-8">
       <div class="container">
+        {% if success %}
+        <div class="alert alert-success mb-5">{{ success }}</div>
+        {% else %}
         {% with messages = get_flashed_messages() %} {% if messages %}
         <ul class="flashes">
           {% for message in messages %}
@@ -27,6 +30,7 @@
         </ul>
         {% endif %} {% endwith %}
       </div>
+
       {% if error %}
       <p class="error" style="color: red">
         {{ error }} {% endif %} {{ render_form(form, novalidate=True) }}
@@ -35,6 +39,7 @@
       <p class="space-above">
         <a href="{{ url_for('home') }}">Back to the home page</a>
       </p>
+      {% endif %}
     </div>
   </div>
 </div>

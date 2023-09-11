@@ -1,6 +1,6 @@
 from functools import wraps
 import cloudinary
-from flask import Flask, render_template, redirect, url_for, request, abort
+from flask import Flask, render_template, redirect, url_for, request, abort, flash
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
 from flask_ckeditor import CKEditor
@@ -12,13 +12,15 @@ import os
 import forms
 from sqlalchemy.orm import relationship
 from cloudinary import uploader
+import secrets
+
 
 cloudinary.config(
     cloud_name=os.environ.get("CLOUD_NAME"),
     api_key=os.environ["CLOUD_API"],
     api_secret=os.environ["API_SECRET"]
 )
-
+BLOG_EMAIL = "motoblog.mb@gmail.com"
 
 app = Flask(__name__)
 login_manager = LoginManager()
@@ -31,8 +33,8 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 Bootstrap5(app)
 
 # CONNECT TO DB
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
-# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -60,13 +62,11 @@ def admin_or_author(function, comment):
     return wrapper_function
 
 
-def send_email(name, email_address, phone, message):
+def send_email(msg_body, to):
     with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
         connection.starttls()
-        connection.login(os.environ["MY_EMAIL"], os.environ["PW"])
-        connection.sendmail(from_addr=email_address, to_addrs=os.environ["MY_EMAIL"],
-                            msg=f"Subject:{name} wants to contact you\n\nYou've got this message: {message}\n"
-                                f"Sent from {email_address}\nPhone: {phone}")
+        connection.login(BLOG_EMAIL, os.environ["PW"])
+        connection.sendmail(from_addr=BLOG_EMAIL, to_addrs=to, msg=msg_body)
 
 
 def upload_image():
@@ -84,7 +84,8 @@ class BlogPost(db.Model):
     subtitle = db.Column(db.String(250), nullable=False)
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
-    img_url = db.Column(db.String(250))
+    img_url = db.Column(db.String(250),
+                        default="https://res.cloudinary.com/dw6opo6zj/image/upload/v1694187951/xucfh3zxpl81q9y2f6cf.png")
     author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     # Define one-to-many relationship with comments
     comments = relationship("Comment", backref="blog_post", lazy=True)
@@ -95,7 +96,11 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(250), nullable=False)
     email = db.Column(db.String(250), unique=True, nullable=False)
     password = db.Column(db.String(250), nullable=False)
-    img_url = db.Column(db.String(250))
+    email_confirmed = db.Column(db.Boolean, default=False)
+    confirmation_token = db.Column(db.String(100))
+    token_creation_time = db.Column(db.String(100))
+    img_url = db.Column(db.String(250),
+                        default="https://res.cloudinary.com/dw6opo6zj/image/upload/v1694185393/qihe2lbih2oaegat3pzl.jpg")
     bio = relationship("UserBio", backref="user", uselist=False)
     # Define one-to-many relationships
     posts = relationship("BlogPost", backref="author", lazy=True)
@@ -154,16 +159,17 @@ def about():
 @app.route("/contact", methods=["POST", "GET"])
 def contact():
     contact_form = forms.ContactUs()
-    success_message = None
     if contact_form.validate_on_submit():
         name = contact_form.name.data
         email_address = contact_form.email.data
         phone = contact_form.phone.data
         message = contact_form.message.data
-        send_email(name, email_address, phone, message)
+        msg_body = (f"Subject:Message from {name}\n\n\n{message}\n\nEmail address: {email_address}\n"
+                    f"Phone number: {phone}")
+        send_email(msg_body, os.environ["MY_EMAIL"])
         success_message = "Your message has been successfully sent."
         return render_template("contact.html", success_message=success_message)
-    return render_template("contact.html", form=contact_form, success_message=success_message)
+    return render_template("contact.html", form=contact_form, success_message=None)
 
 
 @app.route("/add", methods=["GET", "POST"])
@@ -173,14 +179,11 @@ def add_post():
     form = forms.CreatePost()
     date = datetime.datetime.now().date().strftime("%B %d, %Y")
     if request.method == "POST":
-        form.validate_file(form.image)
         new_post = BlogPost(title=form.title.data, subtitle=form.subtitle.data, date=date,
                             author_id=current_user.id, body=form.body.data)
         image = upload_image()
         if image:
             new_post.img_url = image
-        else:
-            new_post.img_url = "https://res.cloudinary.com/dw6opo6zj/image/upload/v1694187951/xucfh3zxpl81q9y2f6cf.png"
         db.session.add(new_post)
         db.session.commit()
         return redirect(url_for("home"))
@@ -229,12 +232,15 @@ def login():
         user_email = login_form.email.data
         user = User.query.filter_by(email=user_email).scalar()
         if user:
-            password = check_password_hash(user.password, login_form.password.data)
-            if password:
-                login_user(user)
-                return redirect(url_for("home"))
+            if user.email_confirmed:
+                password = check_password_hash(user.password, login_form.password.data)
+                if password:
+                    login_user(user)
+                    return redirect(url_for("home"))
+                else:
+                    error = "The username and password doesn't match."
             else:
-                error = "The username and password doesn't match."
+                error = "Your email address isn't confirmed."
         else:
             error = "This email address is not registered."
     return render_template("login.html", form=login_form, error=error)
@@ -254,8 +260,11 @@ def register():
         new_user = User()
         new_user.name = registration_form.name.data.title()
         new_user.email = registration_form.email.data
-        new_user.password = generate_password_hash(registration_form.password.data, method="pbkdf2:sha256", salt_length=16)
-        new_user.img_url = "https://res.cloudinary.com/dw6opo6zj/image/upload/v1694185393/qihe2lbih2oaegat3pzl.jpg"
+        new_user.password = generate_password_hash(registration_form.password.data,
+                                                   method="pbkdf2:sha256", salt_length=16)
+        token = secrets.token_urlsafe(32)
+        new_user.confirmation_token = token
+        new_user.token_creation_time = datetime.datetime.now()
         already_registered = User.query.filter_by(email=new_user.email).all()
         if already_registered:
             error = "This email address already exists in database, try to Log in."
@@ -263,9 +272,27 @@ def register():
         else:
             db.session.add(new_user)
             db.session.commit()
-            login()
-            return redirect(url_for("home"))
-    return render_template("register.html", form=registration_form)
+            login_url_with_token = url_for('confirm_email', token=token, _external=True)
+            message = (f"Subject:Confirm your registration\n\nThank you for registering.\n"
+                       f"Click on the link to confirm your email address: {login_url_with_token}")
+            send_email(message, new_user.email)
+            success = "Confirmation email has been sent. Please check your inbox."
+            return render_template("register.html", form=registration_form, success=success)
+    return render_template("register.html", form=registration_form, success=None)
+
+
+@app.route('/confirm_email/<token>', methods=["GET", "POST"])
+def confirm_email(token):
+    form = forms.LoginForm()
+    user = User.query.filter_by(confirmation_token=token).first()
+    try:
+        user.email_confirmed = True
+        user.confirmation_token = None
+        db.session.commit()
+        message = "Your email address has been confirmed, now you can log in."
+    except AttributeError:
+        return redirect(url_for("login"))
+    return render_template("login.html", form=form, message=message)
 
 
 @app.route("/post/<int:post_id>/add_comment", methods=["GET", "POST"])
@@ -293,7 +320,6 @@ def edit_profile():
     form = forms.Profile(img_url=current_user.img_url, name=current_user.name, email=current_user.email)
     if form.validate_on_submit():
         user = db.get_or_404(User, current_user.id)
-        form.validate_file(form.image)
         image = upload_image()
         if image:
             user.img_url = image
