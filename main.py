@@ -1,6 +1,6 @@
 from functools import wraps
 import cloudinary
-from flask import Flask, render_template, redirect, url_for, request, abort, flash
+from flask import Flask, render_template, redirect, url_for, request, abort
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
 from flask_ckeditor import CKEditor
@@ -20,6 +20,7 @@ cloudinary.config(
     api_key=os.environ["CLOUD_API"],
     api_secret=os.environ["API_SECRET"]
 )
+
 BLOG_EMAIL = "motoblog.mb@gmail.com"
 
 app = Flask(__name__)
@@ -33,8 +34,8 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 Bootstrap5(app)
 
 # CONNECT TO DB
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
-# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -69,10 +70,10 @@ def send_email(msg_body, to):
         connection.sendmail(from_addr=BLOG_EMAIL, to_addrs=to, msg=msg_body)
 
 
-def upload_image():
+def upload_image(transformation_options):
     uploaded_file = request.files["image"]
     if uploaded_file.filename != "":
-        result = cloudinary.uploader.upload(uploaded_file)
+        result = uploader.upload(uploaded_file, transformation=transformation_options)
         image_url = result["secure_url"]
         return image_url
 
@@ -100,7 +101,7 @@ class User(UserMixin, db.Model):
     confirmation_token = db.Column(db.String(100))
     token_creation_time = db.Column(db.String(100))
     img_url = db.Column(db.String(250),
-                        default="https://res.cloudinary.com/dw6opo6zj/image/upload/v1694185393/qihe2lbih2oaegat3pzl.jpg")
+                        default="https://res.cloudinary.com/dw6opo6zj/image/upload/v1694460393/r12evlg6bovzrco1wwss.jpg")
     bio = relationship("UserBio", backref="user", uselist=False)
     # Define one-to-many relationships
     posts = relationship("BlogPost", backref="author", lazy=True)
@@ -181,7 +182,7 @@ def add_post():
     if request.method == "POST":
         new_post = BlogPost(title=form.title.data, subtitle=form.subtitle.data, date=date,
                             author_id=current_user.id, body=form.body.data)
-        image = upload_image()
+        image = upload_image(None)
         if image:
             new_post.img_url = image
         db.session.add(new_post)
@@ -201,7 +202,7 @@ def edit_post(post_id):
         post.subtitle = edit_form.subtitle.data
         post.body = edit_form.body.data
         edit_form.validate_file(edit_form.image)
-        image = upload_image()
+        image = upload_image(None)
         if image:
             post.img_url = image
         else:
@@ -285,14 +286,15 @@ def register():
 def confirm_email(token):
     form = forms.LoginForm()
     user = User.query.filter_by(confirmation_token=token).first()
-    try:
+    message = "Your email address has been confirmed, now you can log in."
+    if form.validate_on_submit():
         user.email_confirmed = True
         user.confirmation_token = None
         db.session.commit()
-        message = "Your email address has been confirmed, now you can log in."
-    except AttributeError:
-        return redirect(url_for("login"))
+        return redirect(url_for("home"))
     return render_template("login.html", form=form, message=message)
+
+
 
 
 @app.route("/post/<int:post_id>/add_comment", methods=["GET", "POST"])
@@ -305,7 +307,6 @@ def add_comment(post_id):
         db.session.add(new_comment)
         db.session.commit()
         return redirect(url_for("get_post", post_id=post_id))
-    return redirect(url_for("home"))
 
 
 @app.route("/my-page")
@@ -320,7 +321,11 @@ def edit_profile():
     form = forms.Profile(img_url=current_user.img_url, name=current_user.name, email=current_user.email)
     if form.validate_on_submit():
         user = db.get_or_404(User, current_user.id)
-        image = upload_image()
+        image = upload_image(transformation_options={
+            "width": 300,
+            "height": 300,
+            "crop": "fill"
+        })
         if image:
             user.img_url = image
         user.name = form.name.data
@@ -342,4 +347,4 @@ def delete_comment(post_id, comment_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
