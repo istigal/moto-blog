@@ -36,10 +36,7 @@
           <p class="post-meta">
             Posted by
             <a href="#">{{ post.author.name }}</a>
-            {{ post.date }} {% if current_user.id == 1 %}
-
-            <a href="{{ url_for('delete', post_id=post.id) }}"></a>
-            {% endif %}
+            {{ post.date }}
           </p>
         </div>
          {% if current_user.id == post.author_id or current_user.id == 1 %}
@@ -89,22 +86,18 @@
       {% endfor %} {% endif %}
       <!-- Pager-->
       {% if posts | count > num %}
-      <div class="d-flex row my-4">
-        <div class="col-sm-3"><a
-          class="btn btn-secondary text-uppercase m-2"
+        <div class="float-start my-3 mb-4"><a
+          class="btn btn-secondary text-uppercase"
           href="{{ url_for('show_more', num=num) }}"
           >Older posts</a
         ></div>
-
         {% endif %}
       {% if current_user.id == 1 %}
-         <div class="col-sm-4 ms-auto"><a
-          class="btn btn-primary text-uppercase m-2 justify-content-end"
+         <div class="float-end my-3 mb-4"><a
+          class="btn btn-primary text-uppercase"
           href="{{ url_for('add_post') }}"
-          >Create a new post</a
+          >Create post</a
         ></div>
-
-      </div>
       {% endif %}
     </div>
   </div>

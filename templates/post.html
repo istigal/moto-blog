@@ -23,7 +23,7 @@
   <div class="container px-md-4 px-lg-5 py-4">
     <div class="row gx-4 gx-lg-5 justify-content-center">
       <div
-        class="col-md-10 col-lg-8 col-xl-7 bg-body-tertiary pb-4 content-cont"
+        class="col-md-10 col-lg-8 col-xl-7 bg-body-tertiary pb-2 content-cont"
         style="width: 80%; border-radius: 21px"
       >
         <p>{{ post.body | safe }}</p>
@@ -104,8 +104,8 @@
             </div>
             </div>
           {% else %}
-          <div class="float-end">
-                <a href="{{ url_for('login') }}" class="btn btn-primary my-3" role="button">Log in to comment</a>
+          <div class="float-end my-3">
+                <a href="{{ url_for('login') }}" class="btn btn-primary" role="button">Log in to comment</a>
               </div>
           {% endif %}
         </div>
