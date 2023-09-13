@@ -20,7 +20,7 @@
 </header>
 <!-- Post Content-->
 <article>
-  <div class="container px-4 px-lg-5 py-4">
+  <div class="container px-md-4 px-lg-5 py-4">
     <div class="row gx-4 gx-lg-5 justify-content-center">
       <div
         class="col-md-10 col-lg-8 col-xl-7 bg-body-tertiary pb-4 content-cont"
@@ -48,14 +48,14 @@
         <div class="comments">
           <h5 class="comment-title my-4">{{ comments | count }} Comments</h5>
           {% for comment in comments %}
-          <div class="d-flex flex-start mb-1">
+          <div class="d-flex flex-start my-2">
           <img class="rounded-circle shadow-1-strong me-3" src="{{ comment.author.img_url }}" alt="avatar" width="65" height="65">
           <div class="card w-100">
-            <div class="card-body pt-4">
+            <div class="card-body pt-3">
               <div class="row">
                 <h5 class="col-auto me-auto">{{ comment.author.name }}</h5>
                 <p class="small col-auto">{{ comment.date }}</p>
-                <p>
+                <p class="comm">
                   {{ comment.body }}
                 </p>
                 <div class="d-flex justify-content-end">
@@ -85,11 +85,17 @@
         </div>
             {% endfor %}
           {% if current_user.is_authenticated %}
-          <div class="d-flex flex-start mt-4 mb-3">
+          <div class="d-flex flex-start mt-4 my-3">
           <img class="rounded-circle shadow-1-strong me-3" src="{{ current_user.img_url }}" alt="avatar" width="65" height="65">
           <div class="w-100">
              <form action="{{ url_for('add_comment', post_id=post.id) }}" method="post">
-                  <textarea class="form-control rounded" id="comment" name="comment" placeholder="Write a comment..." rows="4" style="background: #fff;"></textarea>
+                  <textarea class="form-control rounded"
+                            id="comment" name="comment"
+                            placeholder="Write a comment..."
+                            rows="4" style="background: #fff;"
+                            maxlength="250"
+                            required
+                  ></textarea>
 
               <div class="float-end pt-3">
                 <button type="submit" class="btn btn-primary">Add comment</button>

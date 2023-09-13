@@ -54,15 +54,6 @@ def admin_only(function):
     return wrapper_function
 
 
-def admin_or_author(function, comment):
-    @wraps(function)
-    def wrapper_function(*args, **kwargs):
-        if not current_user.id != comment.author_id or current_user.id != 1:
-            abort(403)
-        return function(*args, **kwargs)
-    return wrapper_function
-
-
 def send_email(msg_body, to):
     with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
         connection.starttls()
@@ -287,14 +278,15 @@ def confirm_email(token):
     form = forms.LoginForm()
     user = User.query.filter_by(confirmation_token=token).first()
     message = "Your email address has been confirmed, now you can log in."
-    if form.validate_on_submit():
-        user.email_confirmed = True
-        user.confirmation_token = None
-        db.session.commit()
-        return redirect(url_for("home"))
+    if user:
+        if form.validate_on_submit():
+            user.email_confirmed = True
+            user.confirmation_token = None
+            db.session.commit()
+            return redirect(url_for("home"))
+    else:
+        abort(403)
     return render_template("login.html", form=form, message=message)
-
-
 
 
 @app.route("/post/<int:post_id>/add_comment", methods=["GET", "POST"])
@@ -302,8 +294,7 @@ def confirm_email(token):
 def add_comment(post_id):
     date = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
     if request.method == "POST":
-        new_comment = Comment(body=request.form["comment"], author_id=current_user.id,
-                              post_id=post_id, date=date)
+        new_comment = Comment(body=request.form.get("comment"), author_id=current_user.id, post_id=post_id, date=date)
         db.session.add(new_comment)
         db.session.commit()
         return redirect(url_for("get_post", post_id=post_id))
@@ -332,7 +323,6 @@ def edit_profile():
         user.email = form.email.data
         db.session.commit()
         return redirect(url_for("my_page"))
-
     return render_template("my_page.html", form=form, edit_mode=True)
 
 
@@ -344,6 +334,45 @@ def delete_comment(post_id, comment_id):
         db.session.delete(comment)
         db.session.commit()
         return redirect(url_for("get_post", post_id=post_id))
+
+
+@app.route('/forgot-password', methods=["GET", "POST"])
+def forgot_pass():
+    error = None
+    form = forms.ResetPass()
+    if form.validate_on_submit():
+        email = form.email.data
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = secrets.token_urlsafe(32)
+            user.confirmation_token = token
+            db.session.commit()
+            reset_pass_url = url_for('reset_password', token=token, _external=True)
+            message = (f"Subject:Password reset request\n\nWe got your password reset request.\n"
+                       f"Click on the link to reset your password: {reset_pass_url}\n\n"
+                       f"If you didn't make password resetting request just ignore and delete this email.\n\n"
+                       f"Have a nice day!")
+            send_email(message, user.email)
+            success = "Password reset link has been sent. Please check your inbox."
+            return render_template("login.html", success=success)
+        else:
+            error = "This email address is not registered."
+    return render_template("login.html", form=form, error=error)
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    form = forms.ResetPassword()
+    user = User.query.filter_by(confirmation_token=token).first()
+    if user:
+        if form.validate_on_submit():
+            user.password = generate_password_hash(form.password.data, method="pbkdf2:sha256", salt_length=16)
+            user.confirmation_token = None
+            db.session.commit()
+            return redirect(url_for("login"))
+    else:
+        abort(403)
+    return render_template("reset_pass.html", form=form)
 
 
 if __name__ == "__main__":

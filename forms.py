@@ -1,14 +1,14 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, PasswordField
 from flask_wtf.file import FileField, FileAllowed
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length, NumberRange
 from flask_ckeditor import CKEditorField
 import re
 
 
 class CreatePost(FlaskForm):
-    title = StringField("Title", validators=[DataRequired(), Length(5, 250)])
-    subtitle = StringField("Subtitle", validators=[DataRequired(), Length(10, 250)])
+    title = StringField("Title", validators=[DataRequired(), Length(5, 100)])
+    subtitle = StringField("Subtitle", validators=[DataRequired(), Length(10, 150)])
     image = FileField("Select a picture", validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'],
                                                                   'Only images are allowed!')])
     body = CKEditorField("Post content", validators=[DataRequired(), Length(250, 5000)])
@@ -22,9 +22,9 @@ class CreatePost(FlaskForm):
 
 
 class ContactUs(FlaskForm):
-    name = StringField("Your name", validators=[DataRequired()])
+    name = StringField("Your name", validators=[DataRequired(), Length(3, 100)])
     email = StringField("Email address", validators=[DataRequired(), Email()])
-    phone = StringField("Phone number", validators=[DataRequired()])
+    phone = StringField("Phone number", validators=[DataRequired(), NumberRange()])
     message = TextAreaField("Message", validators=[DataRequired(), Length(min=50)])
     submit = SubmitField("Send")
 
@@ -32,11 +32,38 @@ class ContactUs(FlaskForm):
 class Register(FlaskForm):
     name = StringField("Your name", validators=[DataRequired(), Length(4, 100)])
     email = StringField("Email address", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired(), Length(8, 30),
+    password = PasswordField("Password", validators=[DataRequired(),
                                                      EqualTo("confirm_pass", message='Passwords must match')])
     confirm_pass = PasswordField("Confirm Password", validators=[DataRequired(),
-                                                                 EqualTo("password", message='Passwords must match')])
+                                                                 EqualTo("password",
+                                                                         message='Passwords must match')])
     submit = SubmitField("Register")
+
+    def validate_password(self, field):
+        password = field.data
+        reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,30}$"
+        # compiling regex
+        pat = re.compile(reg)
+        # searching regex
+        mat = re.search(pat, password)
+        # validating conditions
+        if not mat:
+            raise ValidationError("The password must be between 8-30 characters and must contain at least one upper-, "
+                                  "one lowercase character, one number and one of the following special characters @$!%*#?&")
+
+
+class ResetPass(FlaskForm):
+    email = StringField("Enter your email address", validators=[DataRequired(), Email()])
+    submit = SubmitField("Reset your password")
+
+
+class ResetPassword(FlaskForm):
+    password = PasswordField("New Password", validators=[DataRequired(),
+                                                         EqualTo("confirm_pass", message='Passwords must match')])
+    confirm_pass = PasswordField("Confirm New Password", validators=[DataRequired(),
+                                                                     EqualTo("password",
+                                                                             message='Passwords must match')])
+    submit = SubmitField("Save Password")
 
     def validate_password(self, field):
         password = field.data
@@ -47,8 +74,8 @@ class Register(FlaskForm):
         mat = re.search(pat, password)
         # validating conditions
         if not mat:
-            raise ValidationError("The password must contain at least one upper-, one lowercase character, one number "
-                                  "and one of the following special characters @$!%*#?&")
+            raise ValidationError("The password must be between 8-30 characters and must contain at least one upper-, "
+                            "one lowercase character, one number and one of the following special characters @$!%*#?&")
 
 
 class LoginForm(FlaskForm):
@@ -71,3 +98,4 @@ class Profile(FlaskForm):
                 pass
             else:
                 raise ValidationError('Invalid file format. Please upload an image.')
+
