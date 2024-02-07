@@ -17,8 +17,8 @@ import secrets
 
 cloudinary.config(
     cloud_name=os.environ.get("CLOUD_NAME"),
-    api_key=os.environ["CLOUD_API"],
-    api_secret=os.environ["API_SECRET"]
+    api_key=os.environ.get("CLOUD_API"),
+    api_secret=os.environ.get("API_SECRET")
 )
 
 BLOG_EMAIL = "motoblog.mb@gmail.com"
@@ -30,12 +30,12 @@ login_manager.init_app(app)
 ckeditor = CKEditor()
 ckeditor.init_app(app)
 
-app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 Bootstrap5(app)
 
 # CONNECT TO DB
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
-# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DB_URI"]
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///posts.db"
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -57,7 +57,7 @@ def admin_only(function):
 def send_email(msg_body, to):
     with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
         connection.starttls()
-        connection.login(BLOG_EMAIL, os.environ["PW"])
+        connection.login(BLOG_EMAIL, os.environ.get("PW"))
         connection.sendmail(from_addr=BLOG_EMAIL, to_addrs=to, msg=msg_body)
 
 
@@ -158,7 +158,7 @@ def contact():
         message = contact_form.message.data
         msg_body = (f"Subject:Message from {name}\n\n\n{message}\n\nEmail address: {email_address}\n"
                     f"Phone number: {phone}")
-        send_email(msg_body, os.environ["MY_EMAIL"])
+        send_email(msg_body, os.environ.get("MY_EMAIL"))
         success_message = "Your message has been successfully sent."
         return render_template("contact.html", success_message=success_message)
     return render_template("contact.html", form=contact_form, success_message=None)
@@ -376,4 +376,4 @@ def reset_password(token):
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
